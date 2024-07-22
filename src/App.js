@@ -1,21 +1,17 @@
-import { useState } from "react";
+import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
+import Stepper from "./components/Stepper";
 import PdfViewerComponent from "./components/PdfViewerComponent";
-import "./App.css";
+import PdfOptions from "./components/PdfOptions"; // Import PdfOptions
 
 function App() {
-  const [document, setDocument] = useState("AttestationdescolaritéHAMZA.pdf");
-
-  const handleOpen = () => setDocument("another-example.pdf");
-
   return (
-    <div className="App">
-      <button className="App-button" onClick={handleOpen}>
-        Open another document
-      </button>
-      <div className="App-viewer">
-        <PdfViewerComponent document={document} />
-      </div>
-    </div>
+    <Router>
+      <Routes>
+        <Route path="/" element={<Stepper />} />
+        <Route path="/pdf-options" element={<PdfOptions />} /> {/* Add route for PdfOptions */}
+        <Route path="/pdf-viewer" element={<PdfViewerComponent />} />
+      </Routes>
+    </Router>
   );
 }
 
