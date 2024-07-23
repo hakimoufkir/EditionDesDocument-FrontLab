@@ -1,28 +1,16 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import axios from 'axios';
 import PSPDFKit from 'pspdfkit';
+import axios from 'axios';
 
 export default function PdfViewerComponent() {
   const location = useLocation();
+  const { fileBlob, pathFile, instantJSON, id } = location.state || {};
   const containerRef = useRef(null);
   const [instance, setInstance] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [instantJSON, setInstantJSON] = useState({}); // Default to empty object
-  const [pdfId, setPdfId] = useState(''); // Default to empty string
 
   useEffect(() => {
-    const { fileBlob, instantJSON, id } = location.state || {};
-    console.log('Location State:', location.state); // Debugging
-
-    if (instantJSON !== undefined) {
-      setInstantJSON(instantJSON); // Store the instantJSON received from state
-    }
-
-    if (id !== undefined) {
-      setPdfId(id); // Store the PDF ID received from state
-    }
-
     if (fileBlob) {
       const fileURL = URL.createObjectURL(fileBlob);
 
@@ -46,6 +34,16 @@ export default function PdfViewerComponent() {
           });
 
           setInstance(loadedInstance);
+
+          if (instantJSON) {
+            await loadedInstance.applyOperations([
+              {
+                type: 'applyInstantJson',
+                instantJson: JSON.parse(instantJSON)
+              }
+            ]);
+          }
+
           console.log("PSPDFKit for Web successfully loaded!", loadedInstance);
         } catch (error) {
           console.error("Error loading PSPDFKit", error);
@@ -53,50 +51,56 @@ export default function PdfViewerComponent() {
           setLoading(false);
         }
       })();
-
-      return () => {
-        if (instance) {
-          PSPDFKit.unload(containerRef.current);
-        }
-      };
     } else {
       console.error("No PDF file provided.");
     }
-  }, [location.state]);
+
+    return () => {
+      if (instance && containerRef.current) {
+        PSPDFKit.unload(containerRef.current).catch(error => {
+          console.error("Error unloading PSPDFKit", error);
+        });
+      }
+    };
+  }, [fileBlob, instantJSON]);
 
   const handleExport = async () => {
-    // Log values for debugging
-    console.log('PDF ID:', pdfId);
-    console.log('Instant JSON:', instantJSON);
-    console.log('Instance:', instance);
-
-    if (!instance || !pdfId || !instantJSON) {
-      console.error("Required data is missing.");
+    if (!instance) {
+      console.error("Instance is not loaded.");
       return;
     }
 
     try {
-      // Export PDF as Blob
-      const pdfBlob = await instance.exportPDF();
-      const pdfURL = URL.createObjectURL(pdfBlob);
+      setLoading(true);
+      const exportedInstantJSON = await instance.exportInstantJSON();
+      console.log("Exported Instant JSON:", exportedInstantJSON);
 
-      // Create a link to download the PDF
-      const link = document.createElement('a');
-      link.href = pdfURL;
-      link.download = 'exported-document.pdf';
-      link.click();
+      // Create a new PDF Blob
+      const pdfArrayBuffer = await instance.exportPDF();
+      const pdfBlob = new Blob([pdfArrayBuffer], { type: 'application/pdf' });
+      const formData = new FormData();
+      formData.append('file', pdfBlob, 'updated.pdf');
 
-      // Send data to backend
+      // Upload the new PDF Blob
+      const uploadResponse = await axios.post(`${process.env.REACT_APP_BASE_URL}/api/File/upload`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+
+      const newFileUrl = uploadResponse.data.fileUrl;
+      console.log('File uploaded successfully:', newFileUrl);
+
       const documentData = {
-        id: pdfId,
-        pathFile: pdfURL,
-        instantJSON: JSON.stringify(instantJSON),
+        id: id,
+        pathFile: newFileUrl,
+        instantJSON: JSON.stringify(exportedInstantJSON),
       };
 
-      await axios.post(`${process.env.REACT_APP_BASE_URL}/api/Document/update`, documentData);
+      await axios.put(`${process.env.REACT_APP_BASE_URL}/api/Document/update`, documentData);
       console.log('Document data saved successfully.');
     } catch (error) {
-      console.error("Error exporting files or saving data:", error);
+      console.error("Error exporting Instant JSON or saving data:", error);
+    } finally {
+      setLoading(false);
     }
   };
 

@@ -32,12 +32,7 @@ const PdfOptions = () => {
         .then(uploadResponse => {
           console.log('File uploaded successfully:', uploadResponse.data);
 
-          const documentData = {
-            pathFile: uploadResponse.data.fileUrl,
-            instantJSON: JSON.stringify({
-              hello: 'world!',
-            }),
-          };
+          const documentData = {pathFile: uploadResponse.data.fileUrl};
           console.log('Document data:', documentData);
 
           return axios.post(`${process.env.REACT_APP_BASE_URL}/api/Document/add`, documentData);
@@ -70,7 +65,7 @@ const PdfOptions = () => {
         const fileBlob = new Blob([downloadResponse.data], { type: 'application/pdf' });
   
         // Navigate to PdfViewerComponent with the file Blob, instantJSON, and id
-        navigate('/pdf-viewer', { state: { fileBlob, instantJSON, id } });
+        navigate('/pdf-viewer', { state: { fileBlob, pathFile, instantJSON, id } });
       })
       .catch(error => setError('Error downloading file: ' + error.message));
     })
