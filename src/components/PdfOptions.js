@@ -32,7 +32,7 @@ const PdfOptions = () => {
         .then(uploadResponse => {
           console.log('File uploaded successfully:', uploadResponse.data);
 
-          const documentData = {pathFile: uploadResponse.data.fileUrl};
+          const documentData = { pathFile: uploadResponse.data.fileUrl };
           console.log('Document data:', documentData);
 
           return axios.post(`${process.env.REACT_APP_BASE_URL}/api/Document/add`, documentData);
@@ -48,58 +48,103 @@ const PdfOptions = () => {
 
   const handleEdit = (document) => {
     const { pathFile } = document;
-  
+
     axios.post(`${process.env.REACT_APP_BASE_URL}/api/Document/getDocumentByURL`, pathFile, {
       headers: {
         'Content-Type': 'application/json',
       },
     })
-    .then(response => {
-      const { pathFile, instantJSON, id } = response.data;
-  
-      axios.get(`${process.env.REACT_APP_BASE_URL}/api/File/download`, {
-        params: { url: encodeURIComponent(pathFile) },
-        responseType: 'blob',
+      .then(response => {
+        const { pathFile, instantJSON, id } = response.data;
+
+        axios.get(`${process.env.REACT_APP_BASE_URL}/api/File/download`, {
+          params: { url: encodeURIComponent(pathFile) },
+          responseType: 'blob',
+        })
+          .then(downloadResponse => {
+            const fileBlob = new Blob([downloadResponse.data], { type: 'application/pdf' });
+
+            // Navigate to PdfViewerComponent with the file Blob, instantJSON, and id
+            navigate('/pdf-viewer', { state: { fileBlob, pathFile, instantJSON, id } });
+          })
+          .catch(error => setError('Error downloading file: ' + error.message));
       })
-      .then(downloadResponse => {
-        const fileBlob = new Blob([downloadResponse.data], { type: 'application/pdf' });
-  
-        // Navigate to PdfViewerComponent with the file Blob, instantJSON, and id
-        navigate('/pdf-viewer', { state: { fileBlob, pathFile, instantJSON, id } });
-      })
-      .catch(error => setError('Error downloading file: ' + error.message));
-    })
-    .catch(error => {
-      console.error('Error fetching document details:', error.response?.data);
-      setError('Error fetching document details: ' + error.message);
-    });
+      .catch(error => {
+        console.error('Error fetching document details:', error.response?.data);
+        setError('Error fetching document details: ' + error.message);
+      });
   };
-  
+
+  const handleBack = () => {
+    setSelectedOption(null);
+    setError(null);
+  };
 
   return (
-    <div>
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      {!selectedOption ? (
-        <div>
-          <button onClick={() => setSelectedOption('upload')}>Upload a PDF</button>
-          <button onClick={() => setSelectedOption('edit')}>Edit a PDF</button>
-        </div>
-      ) : selectedOption === 'upload' ? (
-        <div>
-          <input type="file" accept=".pdf" onChange={handleUploadChange} />
-          <button onClick={handleUpload}>Upload</button>
-        </div>
-      ) : selectedOption === 'edit' && (
-        <div>
-          <ul>
-            {documentList.map((doc, index) => (
-              <li key={index}>
-                <button onClick={() => handleEdit(doc)}>{doc.pathFile}</button>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+    <div className="container mx-auto p-6 max-w-2xl">
+      <div className="bg-white shadow-lg rounded-lg p-8 mt-52">
+        <h1 className="text-3xl font-bold mb-6 text-center">PDF Options</h1>
+        {error && <p className="text-red-500 mb-6">{error}</p>}
+        {!selectedOption ? (
+          <div className="flex flex-col items-center space-y-6">
+            <button
+              className="bg-blue-600 text-white py-3 px-6 rounded-lg shadow hover:bg-blue-700 transition duration-200"
+              onClick={() => setSelectedOption('upload')}
+            >
+              Upload a PDF
+            </button>
+            <button
+              className="bg-green-600 text-white py-3 px-6 rounded-lg shadow hover:bg-green-700 transition duration-200"
+              onClick={() => setSelectedOption('edit')}
+            >
+              Edit a PDF
+            </button>
+          </div>
+        ) : selectedOption === 'upload' ? (
+          <div className="flex flex-col items-center space-y-6">
+            <input
+              type="file"
+              accept=".pdf"
+              onChange={handleUploadChange}
+              className="border border-gray-300 py-2 px-4 rounded-lg w-full"
+            />
+            <button
+              className="bg-blue-600 text-white py-3 px-6 rounded-lg shadow hover:bg-blue-700 transition duration-200"
+              onClick={handleUpload}
+            >
+              Upload
+            </button>
+            <button
+              className="bg-gray-600 text-white py-3 px-6 rounded-lg shadow hover:bg-gray-700 transition duration-200"
+              onClick={handleBack}
+            >
+              Back
+            </button>
+          </div>
+        ) : selectedOption === 'edit' && (
+          <div className="mt-6">
+            <ul className="space-y-4">
+              {documentList.map((doc, index) => (
+                <li key={index} className="flex justify-between items-center p-4 bg-gray-100 rounded-lg hover:bg-gray-200 transition duration-200 shadow">
+                  <span className="truncate">{doc.pathFile}</span>
+                  <button
+                    className="bg-blue-600 text-white py-2 px-4 rounded-lg shadow hover:bg-blue-700 transition duration-200"
+                    onClick={() => handleEdit(doc)}
+                  >
+                    Edit
+                  </button>
+                </li>
+              ))}
+            </ul>
+            <button
+              className="bg-gray-600 text-white py-3 px-6 mt-4 rounded-lg shadow hover:bg-gray-700 transition duration-200"
+              onClick={handleBack}
+            >
+              Back
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

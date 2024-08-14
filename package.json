@@ -40,7 +40,8 @@
   },
   "devDependencies": {
     "cross-env": "^7.0.2",
-    "ncp": "^2.0.0"
+    "ncp": "^2.0.0",
+    "tailwindcss": "^3.4.7"
   },
   "browserslist": [
     "Firefox ESR",
