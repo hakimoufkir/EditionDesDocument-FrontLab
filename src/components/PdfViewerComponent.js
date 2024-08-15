@@ -87,11 +87,15 @@ export default function PdfViewerComponent() {
       });
 
       const newFileUrl = uploadResponse.data.fileUrl;
+      const nameFile= uploadResponse.data.name;
+      console.log("name",nameFile);
+      
       console.log('File uploaded successfully:', newFileUrl);
 
       const documentData = {
         id: id,
         pathFile: newFileUrl,
+        name:nameFile,
         instantJSON: JSON.stringify(exportedInstantJSON),
       };
 

@@ -19,6 +19,8 @@ const PdfOptions = () => {
 
   const handleUploadChange = (event) => {
     setUploadFile(event.target.files[0]);
+    //console.log("test : ", event.target.files[0].name);
+    
   };
 
   const handleUpload = () => {
@@ -32,7 +34,7 @@ const PdfOptions = () => {
         .then(uploadResponse => {
           console.log('File uploaded successfully:', uploadResponse.data);
 
-          const documentData = { pathFile: uploadResponse.data.fileUrl };
+          const documentData = { pathFile: uploadResponse.data.fileUrl , name:  uploadFile.name };
           console.log('Document data:', documentData);
 
           return axios.post(`${process.env.REACT_APP_BASE_URL}/api/Document/add`, documentData);
@@ -107,7 +109,7 @@ const PdfOptions = () => {
               accept=".pdf"
               onChange={handleUploadChange}
               className="border border-gray-300 py-2 px-4 rounded-lg w-full"
-            />
+            /> 
             <button
               className="bg-blue-600 text-white py-3 px-6 rounded-lg shadow hover:bg-blue-700 transition duration-200"
               onClick={handleUpload}
@@ -126,7 +128,7 @@ const PdfOptions = () => {
             <ul className="space-y-4">
               {documentList.map((doc, index) => (
                 <li key={index} className="flex justify-between items-center p-4 bg-gray-100 rounded-lg hover:bg-gray-200 transition duration-200 shadow">
-                  <span className="truncate">{doc.pathFile}</span>
+                  <span className="truncate">{doc.name}</span>
                   <button
                     className="bg-blue-600 text-white py-2 px-4 rounded-lg shadow hover:bg-blue-700 transition duration-200"
                     onClick={() => handleEdit(doc)}
