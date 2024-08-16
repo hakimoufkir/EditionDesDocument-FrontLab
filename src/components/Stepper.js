@@ -1,97 +1,130 @@
-import React, { useState } from 'react';
+import * as React from 'react';
+import Box from '@mui/material/Box';
+import Stepper from '@mui/material/Stepper';
+import Step from '@mui/material/Step';
+import StepLabel from '@mui/material/StepLabel';
+import StepContent from '@mui/material/StepContent';
+import Button from '@mui/material/Button';
+import Paper from '@mui/material/Paper';
+import Typography from '@mui/material/Typography';
 import { useNavigate } from 'react-router-dom';
-import './Stepper.css';
 
-const Stepper = () => {
-  const [activeStep, setActiveStep] = useState(0);
-  const navigate = useNavigate();
+// Example images for each step (replace these URLs with your own images)
+import image1 from '.././assets/image1.png';
+const stepImages = [
+  image1,
+  'https://via.placeholder.com/600x400?text=Step+2+Image',
+  'https://via.placeholder.com/600x400?text=Step+3+Image',
+  'https://via.placeholder.com/600x400?text=Step+4+Image',
+  'https://via.placeholder.com/600x400?text=Step+5+Image',
+];
 
-  const steps = [
-    { title: 'Step 1', content: '1. Select Payment Type', description: 'This is step 1' },
-    { title: 'Step 2', content: '2. Enter Payment Information', description: 'This is step 2' },
-    { title: 'Step 3', content: '3. Review and Submit Payment', description: 'This is step 3' },
-    { title: 'Step 4', content: '4. All done!', description: 'You have successfully completed all steps.' }
-  ];
+const steps = [
+  {
+    label: 'Select campaign settings',
+    description: `For each ad campaign that you create, you can control how much
+              you're willing to spend on clicks and conversions, which networks
+              and geographical locations you want your ads to show on, and more.`,
+  },
+  {
+    label: 'Create an ad group',
+    description:
+      'An ad group contains one or more ads which target a shared set of keywords.',
+  },
+  {
+    label: 'Create an ad',
+    description: `Try out different ad text to see what brings in the most customers,
+              and learn how to enhance your ads using features like ad extensions.
+              If you run into any problems with your ads, find out how to tell if
+              they're running and how to resolve approval issues.`,
+  },
+  {
+    label: 'Create an ad',
+    description: `Try out different ad text to see what brings in the most customers,
+              and learn how to enhance your ads using features like ad extensions.
+              If you run into any problems with your ads, find out how to tell if
+              they're running and how to resolve approval issues.`,
+  },
+  {
+    label: 'Finish',
+    description: `finish.`,
+  },
+];
+
+export default function VerticalLinearStepper() {
+  const [activeStep, setActiveStep] = React.useState(0);
 
   const handleNext = () => {
-    if (activeStep < steps.length - 1) {
-      setActiveStep(prevStep => prevStep + 1);
-    }
+    setActiveStep((prevActiveStep) => prevActiveStep + 1);
   };
 
-  const handlePrev = () => {
-    if (activeStep > 0) {
-      setActiveStep(prevStep => prevStep - 1);
-    }
+  const handleBack = () => {
+    setActiveStep((prevActiveStep) => prevActiveStep - 1);
   };
 
-  const handleSubmit = () => {
-    // Navigate to PdfViewerComponent
-    navigate('/pdf-options');
-    // navigate('/pdf-viewer');
+  const navigate = useNavigate();
+
+  const handleRedirect = () => {
+    navigate('/pdf-options')
   };
 
   return (
-    <div className="container">
-      <div className="panel panel-default">
-        <div className="panel-body">
-          <div className="stepper">
-            <ul className="nav nav-tabs" role="tablist">
-              {steps.map((step, index) => (
-                <li
-                  key={index}
-                  role="presentation"
-                  className={index === activeStep ? 'active' : index < activeStep ? 'completed' : 'disabled'}
-                >
-                  <a href={`#stepper-step-${index + 1}`} role="tab" title={step.title}>
-                    <span className="round-tab">{index + 1}</span>
-                  </a>
-                </li>
-              ))}
-            </ul>
-            <div className="tab-content">
-              {steps.map((step, index) => (
-                index === activeStep && (
-                  <div
-                    key={index}
-                    role="tabpanel"
-                    className={`tab-pane fade ${index === activeStep ? 'in active' : ''}`}
-                    id={`stepper-step-${index + 1}`}
-                  >
-                    <h3 className="h2">{step.content}</h3>
-                    <p>{step.description}</p>
-                    <ul className="list-inline pull-right">
-                      {index > 0 && (
-                        <li>
-                          <button className="btn btn-default prev-step" onClick={handlePrev}>
-                            Back
-                          </button>
-                        </li>
-                      )}
-                      {index < steps.length - 1 && (
-                        <li>
-                          <button className="btn btn-primary next-step" onClick={handleNext}>
-                            Next
-                          </button>
-                        </li>
-                      )}
-                      {index === steps.length - 1 && (
-                        <li>
-                          <button className="btn btn-primary" onClick={handleSubmit}>
-                            Submit Payment
-                          </button>
-                        </li>
-                      )}
-                    </ul>
+    <Box sx={{ display: 'flex', width: '100%', height: '100vh' }}>
+      {/* Left column: Stepper */}
+      <Box sx={{ width: '25%', p: 3, backgroundColor: '#f5f5f5' }}>
+        <Stepper activeStep={activeStep} orientation="vertical">
+          {steps.map((step, index) => (
+            <Step key={step.label}>
+              <StepLabel
+                optional={
+                  index === steps.length - 1 ? (
+                    <Typography variant="caption">Last step</Typography>
+                  ) : null
+                }
+              >
+                {step.label}
+              </StepLabel>
+              <StepContent>
+                <Typography>{step.description}</Typography>
+                <Box sx={{ mb: 2 }}>
+                  <div>
+                    <Button
+                      variant="contained"
+                      onClick={handleNext}
+                      sx={{ mt: 1, mr: 1 }}
+                    >
+                      {index === steps.length - 1 ? 'Finish' : 'Continue'}
+                    </Button>
+                    <Button
+                      disabled={index === 0}
+                      onClick={handleBack}
+                      sx={{ mt: 1, mr: 1 }}
+                    >
+                      Back
+                    </Button>
                   </div>
-                )
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
+                </Box>
+              </StepContent>
+            </Step>
+          ))}
+        </Stepper>
+        {activeStep === steps.length && (
+          <Paper square elevation={0} sx={{ p: 3 }}>
+            <Typography>All steps completed - you're finished</Typography>
+            <Button onClick={handleRedirect} sx={{ mt: 1, mr: 1 }}>
+              go To Pdf option
+            </Button>
+          </Paper>
+        )}
+      </Box>
 
-export default Stepper;
+      {/* Right column: Content */}
+      <Box sx={{ width: '75%', p: 3, display: 'flex', flexDirection:'column' , alignItems: 'center', justifyContent: 'center' }}>
+        <img src={stepImages[activeStep]} alt={`Step ${activeStep + 1}`} style={{ maxWidth: '100%', maxHeight: '100%' }} />
+        <Typography variant="h6" sx={{ mt: 2 }}>
+          {steps[activeStep]?.description}
+        </Typography>
+      </Box>
+    </Box>
+  );
+}
