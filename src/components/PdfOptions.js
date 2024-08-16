@@ -4,17 +4,14 @@ import axios from 'axios';
 import { FaFileImport, FaUpload, FaTimesCircle, FaEdit, FaTrash } from 'react-icons/fa';
 
 const truncateFilename = (filename, maxLength = 27) => {
-  const name = filename.replace('.pdf', ''); // Remove .pdf extension
-  if (name.length > maxLength) {
-    return `${name.slice(0, maxLength)}...`;
-  }
-  return name;
+  const name = filename.replace('.pdf', '');
+  return name.length > maxLength ? `${name.slice(0, maxLength)}...` : name;
 };
 
 const PdfOptions = () => {
   const [selectedOption, setSelectedOption] = useState(null);
   const [documentList, setDocumentList] = useState([]);
-  const [uploadFile, setUploadFile] = useState([]);
+  const [uploadFiles, setUploadFiles] = useState([]);
   const [uploadedFilenames, setUploadedFilenames] = useState(new Set());
   const [error, setError] = useState(null);
   const fileInputRef = useRef(null);
@@ -31,89 +28,66 @@ const PdfOptions = () => {
   const handleUploadChange = (event) => {
     const files = Array.from(event.target.files);
     const newFiles = files.filter(file => !uploadedFilenames.has(file.name));
+
     if (newFiles.length === 0) {
       setError('Some files have already been uploaded.');
       return;
     }
 
-    if (uploadFile.length + newFiles.length > 5) {
+    if (uploadFiles.length + newFiles.length > 5) {
       setError('You can only upload a maximum of 5 PDFs.');
       return;
     }
 
-    setUploadFile(prevFiles => [...prevFiles, ...newFiles]);
+    setUploadFiles(prevFiles => [...prevFiles, ...newFiles]);
     setUploadedFilenames(prevFilenames => new Set([...prevFilenames, ...newFiles.map(file => file.name)]));
     setError(null);
   };
 
   const handleUpload = () => {
-    if (uploadFile.length > 0) {
-      uploadFile.forEach(file => {
+    if (uploadFiles.length > 0) {
+      const uploadPromises = uploadFiles.map(file => {
         const formData = new FormData();
         formData.append('file', file);
 
-
-      axios.post(`${process.env.REACT_APP_BASE_URL}/api/File/upload`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      })
-        .then(uploadResponse => {
-          console.log('File uploaded successfully:', uploadResponse.data);
-
-          const documentData = { pathFile: uploadResponse.data.fileUrl , name:uploadFile.name};
-          console.log('Document data:', documentData);
-
-          return axios.post(`${process.env.REACT_APP_BASE_URL}/api/Document/add`, documentData);
-
+        return axios.post(`${process.env.REACT_APP_BASE_URL}/api/File/upload`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
         })
-          .then(uploadResponse => {
-            console.log('File uploaded successfully:', uploadResponse.data);
-
-            const documentData = { pathFile: uploadResponse.data.fileUrl };
-            console.log('Document data:', documentData);
-
-            return axios.post(`${process.env.REACT_APP_BASE_URL}/api/Document/add`, documentData);
-          })
-          .then(() => {
-            console.log(`Document ${file.name} added successfully.`);
-          })
-          .catch(error => setError('Error uploading file or adding document: ' + error.message));
+        .then(uploadResponse => {
+          const documentData = { pathFile: uploadResponse.data.fileUrl, name: file.name };
+          return axios.post(`${process.env.REACT_APP_BASE_URL}/api/Document/add`, documentData);
+        });
       });
 
-      setUploadFile([]);
-      setUploadedFilenames(new Set());
-      setSelectedOption(null);
+      Promise.all(uploadPromises)
+        .then(() => {
+          setUploadFiles([]);
+          setUploadedFilenames(new Set());
+          setSelectedOption(null);
+          setError(null);
+        })
+        .catch(error => setError('Error uploading files or adding documents: ' + error.message));
     }
   };
 
   const handleEdit = (document) => {
     const { pathFile } = document;
 
-    axios.post(`${process.env.REACT_APP_BASE_URL}/api/Document/getDocumentByURL`, pathFile, {
-      headers: {
-        'Content-Type': 'application/json',
-      },
+    axios.post(`${process.env.REACT_APP_BASE_URL}/api/Document/getDocumentByURL`,  pathFile , {
+      headers: { 'Content-Type': 'application/json' },
     })
-      .then(response => {
-        const { pathFile, instantJSON, id } = response.data;
+    .then(response => {
+      const { pathFile, instantJSON, id } = response.data;
 
-        axios.get(`${process.env.REACT_APP_BASE_URL}/api/File/download`, {
-          params: { url: encodeURIComponent(pathFile) },
-          responseType: 'blob',
-        })
-          .then(downloadResponse => {
-            const fileBlob = new Blob([downloadResponse.data], { type: 'application/pdf' });
-
-
-            // Navigate to PdfViewerComponent with the file Blob, instantJSON, and id
-            navigate('/pdf-viewer', { state: { fileBlob, pathFile, instantJSON, id ,name} });
-
-          })
-          .catch(error => setError('Error downloading file: ' + error.message));
-      })
-      .catch(error => {
-        console.error('Error fetching document details:', error.response?.data);
-        setError('Error fetching document details: ' + error.message);
+      return axios.get(`${process.env.REACT_APP_BASE_URL}/api/File/download`, {
+        params: { url: encodeURIComponent(pathFile) },
+        responseType: 'blob',
+      }).then(downloadResponse => {
+        const fileBlob = new Blob([downloadResponse.data], { type: 'application/pdf' });
+        navigate('/pdf-viewer', { state: { fileBlob, pathFile, instantJSON, id } });
       });
+    })
+    .catch(error => setError('Error fetching document details: ' + error.message));
   };
 
   const handleImport = () => {
@@ -122,16 +96,9 @@ const PdfOptions = () => {
     }
   };
 
-  const handleBack = () => {
-    setSelectedOption(null);
-    setUploadFile([]);
-    setUploadedFilenames(new Set());
-    setError(null);
-  };
-
   const handleRemoveFile = (index) => {
-    const fileToRemove = uploadFile[index].name;
-    setUploadFile(prevFiles => {
+    const fileToRemove = uploadFiles[index].name;
+    setUploadFiles(prevFiles => {
       const newFiles = prevFiles.filter((_, i) => i !== index);
       setUploadedFilenames(prevFilenames => {
         const newFilenames = new Set(prevFilenames);
@@ -140,6 +107,13 @@ const PdfOptions = () => {
       });
       return newFiles;
     });
+  };
+
+  const handleBack = () => {
+    setSelectedOption(null);
+    setUploadFiles([]);
+    setUploadedFilenames(new Set());
+    setError(null);
   };
 
   return (
@@ -153,7 +127,7 @@ const PdfOptions = () => {
               className="bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition duration-200"
               onClick={() => {
                 setSelectedOption('upload');
-                setUploadFile([]); // Ensure files are cleared when selecting upload
+                setUploadFiles([]); // Ensure files are cleared when selecting upload
               }}
             >
               Upload a PDF
@@ -174,7 +148,7 @@ const PdfOptions = () => {
               <button onClick={handleUpload} className="bg-blue-500 text-white p-3 rounded-full hover:bg-blue-600">
                 <FaUpload size={20} />
               </button>
-              <button onClick={() => setUploadFile([])} className="bg-red-500 text-white p-3 rounded-full hover:bg-red-600">
+              <button onClick={() => setUploadFiles([])} className="bg-red-500 text-white p-3 rounded-full hover:bg-red-600">
                 <FaTimesCircle size={20} />
               </button>
             </div>
@@ -188,7 +162,7 @@ const PdfOptions = () => {
               multiple
             />
 
-            {uploadFile && uploadFile.map((file, index) => (
+            {uploadFiles.map((file, index) => (
               <div key={index} className="flex items-center justify-between p-4 bg-gray-100 rounded-lg mb-2 w-full border border-gray-300">
                 <div className="flex-1 flex items-center">
                   <span className="truncate flex-1 mr-4">{truncateFilename(file.name)}</span>
@@ -214,15 +188,13 @@ const PdfOptions = () => {
           <div className="mt-6">
             <ul className="space-y-4">
               {documentList.map((doc, index) => (
-
                 <li key={index} className="flex justify-between items-center p-4 bg-gray-100 rounded-lg hover:bg-gray-200 transition duration-200 shadow">
                   <span className="truncate">{doc.name}</span>
-
                   <button
                     className="bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-200"
                     onClick={() => handleEdit(doc)}
                   >
-                    <FaEdit size={20} />
+                    <FaEdit size={20} /> edit
                   </button>
                 </li>
               ))}
