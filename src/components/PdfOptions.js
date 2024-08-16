@@ -19,8 +19,6 @@ const PdfOptions = () => {
 
   const handleUploadChange = (event) => {
     setUploadFile(event.target.files[0]);
-    //console.log("test : ", event.target.files[0].name);
-    
   };
 
   const handleUpload = () => {
@@ -34,7 +32,7 @@ const PdfOptions = () => {
         .then(uploadResponse => {
           console.log('File uploaded successfully:', uploadResponse.data);
 
-          const documentData = { pathFile: uploadResponse.data.fileUrl , name:  uploadFile.name };
+          const documentData = { pathFile: uploadResponse.data.fileUrl , name:uploadFile.name};
           console.log('Document data:', documentData);
 
           return axios.post(`${process.env.REACT_APP_BASE_URL}/api/Document/add`, documentData);
@@ -67,7 +65,7 @@ const PdfOptions = () => {
             const fileBlob = new Blob([downloadResponse.data], { type: 'application/pdf' });
 
             // Navigate to PdfViewerComponent with the file Blob, instantJSON, and id
-            navigate('/pdf-viewer', { state: { fileBlob, pathFile, instantJSON, id } });
+            navigate('/pdf-viewer', { state: { fileBlob, pathFile, instantJSON, id ,name} });
           })
           .catch(error => setError('Error downloading file: ' + error.message));
       })
@@ -109,7 +107,7 @@ const PdfOptions = () => {
               accept=".pdf"
               onChange={handleUploadChange}
               className="border border-gray-300 py-2 px-4 rounded-lg w-full"
-            /> 
+            />
             <button
               className="bg-blue-600 text-white py-3 px-6 rounded-lg shadow hover:bg-blue-700 transition duration-200"
               onClick={handleUpload}

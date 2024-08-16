@@ -5,10 +5,14 @@ import axios from 'axios';
 
 export default function PdfViewerComponent() {
   const location = useLocation();
-  const { fileBlob, pathFile, instantJSON, id } = location.state || {};
+  const { fileBlob, pathFile, instantJSON, id  , fileName  } = location.state || {};
   const containerRef = useRef(null);
   const [instance, setInstance] = useState(null);
   const [loading, setLoading] = useState(false);
+
+  
+
+
 
   useEffect(() => {
     if (fileBlob) {
@@ -62,14 +66,17 @@ export default function PdfViewerComponent() {
         });
       }
     };
-  }, [fileBlob, instantJSON]);
+  }, [fileBlob, instantJSON , fileName]);
 
   const handleExport = async () => {
     if (!instance) {
       console.error("Instance is not loaded.");
       return;
     }
-
+   // Fetch document by ID
+   const response = await axios.get(`https://localhost:7153/api/Document/${id}`);
+   console.log('Document fetched:', response.data);
+   console.log('Document fetched name:', response.data.name);
     try {
       setLoading(true);
       const exportedInstantJSON = await instance.exportInstantJSON();
@@ -87,17 +94,16 @@ export default function PdfViewerComponent() {
       });
 
       const newFileUrl = uploadResponse.data.fileUrl;
-      const nameFile= uploadResponse.data.name;
-      console.log("name",nameFile);
-      
       console.log('File uploaded successfully:', newFileUrl);
 
       const documentData = {
         id: id,
         pathFile: newFileUrl,
-        name:nameFile,
+        name:response.data.name,
         instantJSON: JSON.stringify(exportedInstantJSON),
       };
+      console.log('test : :' ,documentData );
+      
 
       await axios.put(`${process.env.REACT_APP_BASE_URL}/api/Document/update`, documentData);
       console.log('Document data saved successfully.');
