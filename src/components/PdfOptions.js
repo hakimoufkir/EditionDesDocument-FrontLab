@@ -126,7 +126,7 @@ const PdfOptions = () => {
             <ul className="space-y-4">
               {documentList.map((doc, index) => (
                 <li key={index} className="flex justify-between items-center p-4 bg-gray-100 rounded-lg hover:bg-gray-200 transition duration-200 shadow">
-                  <span className="truncate">{doc.pathFile}</span>
+                  <span className="truncate">{doc.name}</span>
                   <button
                     className="bg-blue-600 text-white py-2 px-4 rounded-lg shadow hover:bg-blue-700 transition duration-200"
                     onClick={() => handleEdit(doc)}
