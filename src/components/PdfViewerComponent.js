@@ -98,7 +98,8 @@ export default function PdfViewerComponent() {
 
       const documentData = {
         id: id,
-        pathFile: newFileUrl,
+        pathFile: pathFile,
+        // pathFile: newFileUrl,
         name:response.data.name,
         instantJSON: JSON.stringify(exportedInstantJSON),
       };
